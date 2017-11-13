@@ -1,54 +1,70 @@
 # view list of all bus stops and bus services at these locations
 from functools import wraps
-from flask import Flask, Response, request, json, jsonify, abort
+from flask import Flask, Response, request, json, jsonify, abort, make_response
+from flask_httpauth import HTTPBasicAuth
 app = Flask(__name__)
+auth = HTTPBasicAuth()
 
-tasks = [
+# postgres
+# user: networks
+# password: 123456789
+
+users = [
     {
         'id': 1,
-        'pickup': u'sutd',
-        'deliverto': u'home',
-        'items': u'Milk, Cheese, Pizza, Fruit, Tylenol',
-        'done': False
+        'username': 'pamm',
+        'password': '12345',
+        'email': 'pamm@gmail.com'
     },
     {
         'id': 2,
-        'pickup': u'orchard',
-        'deliverto': u'yishun',
-        'items': u'washing machine',
-        'done': False
+        'username': 'val',
+        'password': '12345',
+        'email': 'val@gmail.com'
+    }
+]
+
+notes = [
+    {
+        'id': 1,
+        'userid': 1
+        'title': 'this is a todo list',
+        'text': 'need to do ml & networks & db'
+    },
+    {
+        'id': 2,
+        'userid': 1
+        'title': 'grocery list',
+        'text': 'buy detergent and broccoli'
     }
 ]
 
 # authentication
-def check_auth(username, password):
-    """This function is called to check if a username/password combination is valid."""
-    return username == 'admin' and password == 'secret'
+@auth.get_password
+def get_password(username):
+    password = [user['password'] for user in users if username == user['username']]
+    return password
 
-def authenticate():
-    """Sends a 401 response that enables basic auth"""
-    return Response(
-    'Could not verify your access level for that URL.\n'+
-    'You have to login with proper credentials', 401,
-    {'WWW-Authenticate': 'Basic realm="Login Required"'})
+@auth.error_handler
+def unauthorized():
+    return make_response(jsonify( { 'error': 'Unauthorized access' } ), 403)
+    # return 403 instead of 401 to prevent browsers from displaying the default auth dialog
 
-def requires_auth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth = request.authorization
-        if not auth:
-            return authenticate()
-        elif not check_auth(auth.username, auth.password):
-            return authenticate()
-        return f(*args, **kwargs)
-    return decorated
+@app.errorhandler(400)
+def bad_request(error):
+    return make_response(jsonify( { 'error': 'Bad request' } ), 400)
+
+@app.errorhandler(404)
+def not_found(error):
+    return make_response(jsonify( { 'error': 'Not found' } ), 404)
+
 
 # REST methods
 @app.route('/')
 def api_root():
-    return 'Welcome to pamm\'s delivery service'
+    return 'Create and share your notes with friends!'
 
-@app.route('/tasks', methods = ['GET', 'POST'])
+@app.route('/notes', methods = ['GET', 'POST'])
 def routes():
     if request.method == 'POST':
         if request.headers['Content-Type'] == 'text/plain':
@@ -89,18 +105,6 @@ def task(taskid):
         return jsonify({'updated task': task})
     else:
         return 'You are looking at ' + json.dumps(task)
-#
-#
-#
-# @auth.get_password
-# def get_password(username):
-#     if username == 'admin':
-#         return 'password'
-#     return None
-#
-# @auth.error_handler
-# def unauthorized():
-#     return make_response(jsonify({'error': 'Unauthorized access'}), 401)
 
 
 if __name__ == '__main__':
