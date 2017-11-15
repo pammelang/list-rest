@@ -1,13 +1,18 @@
 # view list of all bus stops and bus services at these locations
 from functools import wraps
-from flask import Flask, Response, request, json, jsonify, abort, make_response
+from flask import Flask, Response, request, json, jsonify, abort, make_response, g
 from flask_httpauth import HTTPBasicAuth
 app = Flask(__name__)
+app.debug = True
+
 auth = HTTPBasicAuth()
+# login_manager = LoginManager()
+# login_manager.init_app(app)
 
 # postgres
 # user: networks
 # password: 123456789
+
 
 users = [
     {
@@ -60,51 +65,62 @@ notes = [
     }
 ]
 
-# authentication
-@auth.get_password
-def get_password(username):
-    password = [user['password'] for user in users if username == user['username']]
-    return password
+def auth(username, password):
+	for user in users:
+		if (username == user['username']):
+			global own_id
+			own_id = user['id']
+			return username == user['username'] and password == user['password']
 
-@auth.error_handler
-def unauthorized():
-    return make_response(jsonify( { 'error': 'Unauthorized access' } ), 403)
-    # return 403 instead of 401 to prevent browsers from displaying the default auth dialog
+#produces the authentication required pop up box
+def authenticate():
+	message = {'message': "Please authenticate."}
+	resp = jsonify(message)
+	resp.status_code=401
+	resp.headers['WWW-Authenticate']='Basic realm="Please enter your User Name and Password to proceed"'
+	return resp
 
-@app.errorhandler(400)
-def bad_request(error):
-    return make_response(jsonify( { 'error': 'Bad request' } ), 400)
+#checks that login info is correct
+def requireAuth(f):
+	@wraps(f)
+	def decorated(*args, **kwargs):
+		autho = request.authorization
+		if not autho:
+			return authenticate()
+		elif not auth(autho.username, autho.password):
+			return authenticate()
+        # else:
+        #     return 'weird indentation isn't working'
+        # global current_user
+        # current_user = [user for user in users if user['id'] == own_id]
+		return f(*args, **kwargs)
+	return decorated
 
-@app.errorhandler(404)
-def not_found(error):
-    return make_response(jsonify( { 'error': 'Not found' } ), 404)
 
-
-# REST methods
 @app.route('/')
 def api_root():
     return 'Create and share your notes with friends!'
 
 # get/post own notes
-@app.route('/<int:userid>/notes', methods = ['GET', 'POST'])
-@auth.login_required
+@app.route('/notes', methods = ['GET', 'POST'])
+@requireAuth
 def routes():
     if request.method == 'POST':
         if request.headers['Content-Type'] == 'text/plain':
             data = json.loads(request.data)
             note = {
                 'id': notes[-1]['id'] +1,
-                'userid': userid,
+                'userid': own_id,
                 'title': data['title'],
                 'text': data['text'],
-                'private': data['private']
+                'private': data['private'] == 'True'
             }
             notes.append(note)
             return note, 201
         elif request.headers['Content-Type'] == 'application/json':
             note = {
                 'id': notes[-1]['id'] +1,
-                'userid': userid,
+                'userid': own_id,
                 'title': request.json['title'],
                 'text': request.json['text'],
                 'private': request.json['private']
@@ -114,56 +130,84 @@ def routes():
         else:
             return "415 unsupported media type"
     else:
-
-        # TODO - need to deal with user authentication - sessions or tokens??
-
-        return jsonify({'notes': notes})
+        own_notes = []
+        for note in notes:
+             if note['userid'] == own_id:
+                 own_notes.append(note)
+        return jsonify({'notes': own_notes}), 201
 
 # view, delete, update own note
-@app.route('/<int:userid>/notes/<int:noteid>', methods = ['GET', 'DELETE', 'PUT'])
-@auth.login_required
+@app.route('/notes/<int:noteid>', methods = ['GET', 'DELETE', 'PUT'])
+@requireAuth
 def get_note(noteid):
     note = [note for note in notes if note['id'] == noteid]
     if request.method == 'DELETE':
-        notes.remove(note[0])
+        notes.remove(note)
         return 201
     elif request.method == 'PUT':
-        note[0]['done'] = 'True'
-        return 201
+        if request.headers['Content-Type'] == 'text/plain':
+            data = json.loads(request.data)
+        elif request.headers['Content-Type'] == 'application/json':
+            data = request.json
+        for key, value in data:
+            if key in note:
+                note[key] = value
+        return 'You have successfully updated your note.', 201
     else:
-        return 'You are looking at ' + json.dumps(note)
+        return jsonify({'note': note}), 201
 
 
 # view other users' profiles (aka all their notes)
 @app.route('/<int:userid>/notes', methods = ['GET'])
 def get_other_notes(userid):
-    user = [user for user in users if user['id'] == userid]
+    for user in users:
+        if user['id'] == userid:
+            person = user
     user_notes = []
     for note in notes:
-        if note['user_id'] == userid and note['private'] == False:
+        if note['userid'] == userid and note['private'] == False:
             user_notes.append(note)
-    return jsonify({user['username'] + '\'s notes': user_notes}), 201
+    return jsonify({ user['username'] + '\'s notes': user_notes}), 201
 
 
 # post a comment on others' notes
 @app.route('/<int:userid>/notes/<int:noteid>/comments', methods = ['POST'])
-@auth.login_required
+@requireAuth
 def comment(userid, noteid):
-    return
-
-
-@app.route('/notes/<int:noteid>', methods = ['DELETE', 'PUT'])
-def note(noteid):
     note = [note for note in notes if note['id'] == noteid]
-    if request.method == 'DELETE':
-        notes.remove(note[0])
-        return jsonify({'updated notes': notes})
-    elif request.method == 'PUT':
-        note[0]['done'] = 'True'
-        return jsonify({'updated note': note})
+    if note:
+        if request.headers['Content-Type'] == 'text/plain':
+            data = json.loads(request.data)
+        elif request.headers['Content-Type'] == 'application/json':
+            data = request.json
+        else:
+            return 'Unaccepted data type. Please use either json or text'
+        comment = {
+            'userid': own_id,
+            'text': data['text']
+        }
+        note['comments'].append(comment)
+        return jsonify({'comment posted': note})
     else:
-        return 'You are looking at ' + json.dumps(note)
+        return 'Note not found', 400
 
+# follow others
+@app.route('/<int:userid>/follow', methods = ['PUT'])
+@requireAuth
+def follow(userid):
+    to_follow = [user for user in users if user['id'] == userid]
+    if to_follow:
+        if to_follow not in current_user['following']:
+            current_user['following'].append(userid)
+        else:
+            return 'Already following!'
+        return jsonify({'comment posted': note})
+    else:
+        return 'Note not found', 400
+
+# view following
+
+# share notes - send notifications 
 
 if __name__ == '__main__':
     app.run(debug=True)
