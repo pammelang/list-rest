@@ -1,11 +1,9 @@
 # view list of all bus stops and bus services at these locations
 from functools import wraps
-from flask import Flask, Response, request, json, jsonify, abort, make_response, g
-from flask_httpauth import HTTPBasicAuth
+from flask import Flask, Response, request, json, jsonify, abort, make_response
 app = Flask(__name__)
 app.debug = True
 
-auth = HTTPBasicAuth()
 # login_manager = LoginManager()
 # login_manager.init_app(app)
 
@@ -20,21 +18,32 @@ users = [
         'username': 'pamm',
         'password': '12345',
         'email': 'pamm@gmail.com',
-        'following': [2, 3]
+        'following': [2, 3],
+        'messages': []
     },
     {
         'id': 2,
         'username': 'val',
         'password': '12345',
         'email': 'val@gmail.com',
-        'following': [1, 3]
+        'following': [1, 3],
+        'messages': []
     },
     {
         'id': 3,
         'username': 'tom',
         'password': '12345',
         'email': 'tom@gmail.com',
-        'following': [1, 2]
+        'following': [1, 2],
+        'messages': []
+    },
+    {
+        'id': 4,
+        'username': 'dan',
+        'password': '12345',
+        'email': 'dan@gmail.com',
+        'following': [2],
+        'messages': []
     }
 ]
 
@@ -66,40 +75,50 @@ notes = [
 ]
 
 def auth(username, password):
-	for user in users:
-		if (username == user['username']):
-			global own_id
-			own_id = user['id']
-			return username == user['username'] and password == user['password']
+    for user in users:
+        if (username == user['username']):
+            global own_id, current_user
+            own_id = user['id']
+            current_user = user
+            return username == user['username'] and password == user['password']
 
 #produces the authentication required pop up box
 def authenticate():
-	message = {'message': "Please authenticate."}
-	resp = jsonify(message)
-	resp.status_code=401
-	resp.headers['WWW-Authenticate']='Basic realm="Please enter your User Name and Password to proceed"'
-	return resp
+    message = {'message': "Please authenticate."}
+    resp = jsonify(message)
+    resp.status_code=401
+    resp.headers['WWW-Authenticate']='Basic realm="Please enter your User Name and Password to proceed"'
+    return resp
 
 #checks that login info is correct
 def requireAuth(f):
-	@wraps(f)
-	def decorated(*args, **kwargs):
-		autho = request.authorization
-		if not autho:
-			return authenticate()
-		elif not auth(autho.username, autho.password):
-			return authenticate()
-        # else:
-        #     return 'weird indentation isn't working'
-        # global current_user
-        # current_user = [user for user in users if user['id'] == own_id]
-		return f(*args, **kwargs)
-	return decorated
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        autho = request.authorization
+        if 'current_user' not in globals() or current_user == None:
+            if not autho:
+                return authenticate()
+            elif not auth(autho.username, autho.password):
+                return authenticate()
+            else:
+                return f(*args, **kwargs)
+        elif not auth(current_user['username'], current_user['password']):
+            return authenticate()
+        else:
+            return f(*args, **kwargs)
+    return decorated
 
 
 @app.route('/')
 def api_root():
     return 'Create and share your notes with friends!'
+
+@app.route('/logout')
+def logout():
+    global own_id, current_user
+    own_id = 0
+    current_user = None
+    return 'You are logged out!'
 
 # get/post own notes
 @app.route('/notes', methods = ['GET', 'POST'])
@@ -134,7 +153,7 @@ def routes():
         for note in notes:
              if note['userid'] == own_id:
                  own_notes.append(note)
-        return jsonify({'notes': own_notes}), 201
+        return jsonify({'notes': own_notes, 'own profile': current_user}), 201
 
 # view, delete, update own note
 @app.route('/notes/<int:noteid>', methods = ['GET', 'DELETE', 'PUT'])
@@ -197,17 +216,45 @@ def comment(userid, noteid):
 def follow(userid):
     to_follow = [user for user in users if user['id'] == userid]
     if to_follow:
-        if to_follow not in current_user['following']:
+        if userid not in current_user['following']:
             current_user['following'].append(userid)
         else:
-            return 'Already following!'
-        return jsonify({'comment posted': note})
+            return jsonify({'Already following!': current_user})
+        return jsonify({'my profile': current_user})
     else:
-        return 'Note not found', 400
+        return 'User not found', 400
 
 # view following
+@app.route('/dashboard', methods = ['GET'])
+@requireAuth
+def get_notes():
+    followed_notes = []
+    for note in notes:
+        if note['userid'] in current_user['following'] and note['private'] == False:
+            followed_notes.append(note)
+    return jsonify({'followed': followed_notes, 'current profile': current_user}), 201
 
-# share notes - send notifications 
+# share notes - send messages
+@app.route('/notes/<int:noteid>/share/<int:userid>', methods = ['PUT'])
+@requireAuth
+def share_with(noteid, userid):
+    user = [user for user in users if user['id'] == userid]
+    note = [note for note in notes if note['id'] == noteid]
+    if user and note:
+        message = {
+            'userid': own_id,
+            'noteid': noteid
+        }
+        user['messages'].append(message)
+        return 'message sent!', 201
+    else:
+        return 'User or note not found', 400
+
+# view messages
+@app.route('/messages', methods = ['GET'])
+@requireAuth
+def get_messages():
+    return jsonify({'messages': current_user['messages']}), 201
 
 if __name__ == '__main__':
     app.run(debug=True)

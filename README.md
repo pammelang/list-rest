@@ -12,8 +12,10 @@ There can be multiple clients accessing the server simultaneously.
  - Have a private and public repository for notes
 
 ### How to run
+Installing dependencies: 
+
 I think we will have to focus on authentication especially, and maybe concurrency?
 
 Routes will be triggered directly only using URLs
 
-URLs can be redirected - using triggers 
+URLs can be redirected - using triggers
