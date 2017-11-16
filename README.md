@@ -12,8 +12,5 @@ There can be multiple clients accessing the server simultaneously.
  - Have a private and public repository for notes
 
 ### How to run
-I think we will have to focus on authentication especially, and maybe concurrency?
-
-Routes will be triggered directly only using URLs
-
-URLs can be redirected - using triggers 
+On your terminal, go to folder where the file is located. Type the command "python rest.py", open up your browser and access the link: http://127.0.0.1:5000/ 
+Run the following links to access the different routes available
