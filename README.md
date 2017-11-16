@@ -16,7 +16,6 @@ On your terminal, go to folder where the file is located. Type the command "pyth
 Run the following links to access the different routes available
 
 home page: http://127.0.0.1:5000/
-login page: http://127.0.0.1:5000/login
 get/post own notes: http://127.0.0.1:5000/notes
 view/delete/update own notes: http://127.0.0.1:5000/notes/<noteid>
 view other profiles: http://127.0.0.1:5000/<userid>/notes
