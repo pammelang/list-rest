@@ -1,6 +1,7 @@
 # view list of all bus stops and bus services at these locations
 from functools import wraps
 from flask import Flask, Response, request, json, jsonify, abort, make_response
+# from flask-login import LoginManager()
 app = Flask(__name__)
 app.debug = True
 
@@ -95,17 +96,14 @@ def requireAuth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         autho = request.authorization
-        if 'current_user' not in globals() or current_user == None:
+        if 'current_user' not in globals():
             if not autho:
                 return authenticate()
             elif not auth(autho.username, autho.password):
                 return authenticate()
-            else:
-                return f(*args, **kwargs)
         elif not auth(current_user['username'], current_user['password']):
             return authenticate()
-        else:
-            return f(*args, **kwargs)
+        return f(*args, **kwargs)
     return decorated
 
 
@@ -115,10 +113,11 @@ def api_root():
 
 @app.route('/logout')
 def logout():
-    global own_id, current_user
-    own_id = 0
-    current_user = None
-    return 'You are logged out!'
+    if 'current_user' in globals():
+        del own_id, current_users
+        return 'You are logged out!'
+    else:
+        return 'logout unsuccessful'
 
 # get/post own notes
 @app.route('/notes', methods = ['GET', 'POST'])
@@ -190,7 +189,7 @@ def get_other_notes(userid):
 
 
 # post a comment on others' notes
-@app.route('/<int:userid>/notes/<int:noteid>/comments', methods = ['POST'])
+@app.route('/<int:userid>/notes/<int:noteid>/comment', methods = ['POST'])
 @requireAuth
 def comment(userid, noteid):
     note = [note for note in notes if note['id'] == noteid]
