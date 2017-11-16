@@ -76,6 +76,7 @@ notes = [
 def auth(username, password):
     for user in users:
         if (username == user['username']):
+            print("yes i come here")
             global own_id, current_user
             own_id = user['id']
             current_user = user
@@ -107,33 +108,19 @@ def requireAuth(f):
             return f(*args, **kwargs)
     return decorated
 
+#sample curl method: curl -u username http://127.0.0.1:5000/login (input password as requested)
+#sample curl method: curl -u username:password http://127.0.0.1:5000/login
 @app.route('/')
+@requireAuth
 def api_root():
     return ('Create and share your notes with friends!')
 
-#login page
-#sample curl method: curl -u username http://127.0.0.1:5000/login (input password as requested)
-#sample curl method: curl -u username:password http://127.0.0.1:5000/login
-@app.route('/login')
-@requireAuth
-def login():
-    return('Welcome ')
-
-#logout page
-#sample curl method: curl http://127.0.0.1:5000/logout
-@app.route('/logout')
-def logout():
-    #global own_id, current_user
-    global own_id, current_user
-    own_id = 0
-    current_user = None
-    return redirect(url_for('api_root'))
-    
 # get/post own notes
 #sample curl method: curl http://127.0.0.1:5000/notes
 # sample curl method with plain text: 
 #    curl http://127.0.0.1:5000/notes -X POST -H "Content-type: text/plain" -d "title text private"
 @app.route('/notes', methods = ['GET', 'POST'])
+@app.errorhandler(404)
 def routes():
     if request.method == 'POST':
         if request.headers['Content-Type'] == 'text/plain':
@@ -176,19 +163,13 @@ def routes():
 #sample curl delete method: curl http://127.0.0.1:5000/notes/noteid -X DELETE
 #sample curl put method: curl http://127.0.0.1:5000/notes/noteid -X PUT -d 
 @app.route('/notes/<int:noteid>', methods = ['GET', 'DELETE', 'PUT'])
+@app.errorhandler(404)
 def get_note(noteid):
+    note = [note for note in notes if note['id'] == noteid]
     if request.method == 'DELETE':
-        for note in notes:
-            print("printing now....")
-            print(note)
-            if note and note['noteid'] == noteid:
-                if note in notes:
-                    notes.remove(note)
-                    print("help")
-        print("or is it here")
-        return 'Unsuccessful', 201
+        notes.remove(note)
+        return 201
     elif request.method == 'PUT':
-        print("hereeee")
         if request.headers['Content-Type'] == 'text/plain':
             data = json.loads(request.data)
         elif request.headers['Content-Type'] == 'application/json':
@@ -198,12 +179,11 @@ def get_note(noteid):
                 note[key] = value
         return 'You have successfully updated your note.', 201
     else:
-        print("there")
         return jsonify({'note': note}), 201
-
 
 # view other users' profiles (aka all their notes)
 @app.route('/<int:userid>/notes', methods = ['GET'])
+@app.errorhandler(404)
 def get_other_notes(userid):
     for user in users:
         if user['id'] == userid:
@@ -218,6 +198,7 @@ def get_other_notes(userid):
 # post a comment on others' notes
 # sample curl method: curl http://127.0.0.1:5000/userid/notes/noteid/comments -X PUT -d '{"text":"input_text_here"}'
 @app.route('/<int:userid>/notes/<int:noteid>/comments', methods = ['POST','GET'])
+@app.errorhandler(404)
 def comment(userid, noteid):
     for note in notes:
         if note['noteid'] == noteid:
@@ -241,6 +222,7 @@ def comment(userid, noteid):
 # follow others
 # sample curl method: curl http://127.0.0.1:5000/userid/follow -X PUT
 @app.route('/<int:userid>/follow', methods = ['PUT', 'GET'])
+@app.errorhandler(404)
 def follow(userid):
     to_follow = [user for user in users if user['id'] == userid]
     if to_follow:
@@ -256,6 +238,7 @@ def follow(userid):
 # view following
 # sample curl method: curl http://127.0.0.1:5000/dashboard
 @app.route('/dashboard', methods = ['GET'])
+@app.errorhandler(404)
 def get_notes():
     followed_notes = []
     for note in notes:
@@ -266,6 +249,7 @@ def get_notes():
 # share notes - send messages
 # sample curl method: curl http://127.0.0.1:5000/notes/noteid/share/userid -X PUT
 @app.route('/notes/<int:noteid>/share/<int:userid>', methods = ['PUT','GET'])
+@app.errorhandler(404)
 def share_with(noteid, userid):
     for user in users:
         if user['id'] == userid:
@@ -282,8 +266,9 @@ def share_with(noteid, userid):
         return 'User or note not found', 400
 
 # view messages
-#sample curl method: curl http://127.0.0.1:5000/messages
+# sample curl method: curl http://127.0.0.1:5000/messages
 @app.route('/messages', methods = ['GET'])
+@app.errorhandler(404)
 def get_messages():
     return jsonify({'messages': current_user['messages']}), 201
 
