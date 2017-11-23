@@ -2,48 +2,9 @@ from flask import Flask, request, render_template, redirect, url_for, json, json
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from forms import SignupForm, NoteForm, CommentForm
 from flask_sqlalchemy import SQLAlchemy
+from json2html import *
 import tempfile
 import os.path
-
-users = [
-    {
-        "id": 0,
-        "username": "pamm",
-        "password": "12345",
-        "email": "pamm@gmail.com",
-        "following": [2, 3],
-        "messages": []
-    }
-]
-
-notes = [
-    {
-        "noteid": 1,
-        "userid": 1,
-        "title": "this is a todo list",
-        "text": "need to do ml & networks & db",
-        "private": "False",
-        "comments": [{"userid": 2, "text": "wow thats alot"}, {"userid": 3, "text": "how to do ml?"}]
-    },
-    {
-        "noteid": 2,
-        "userid": 1,
-        "title": "grocery list",
-        "text": "buy detergent and broccoli",
-        "private": "False",
-        "comments": [{"userid": 2, "text": "can you help me buy milk"}]
-    },
-    {
-        "noteid": 3,
-        "userid": 3,
-        "title": "reminder",
-        "text": "meet val at 3pm tomorrow",
-        "private": "True",
-        "comments": []
-    }
-]
-
-
 
 app = Flask(__name__)
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
@@ -55,6 +16,13 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(tempfile.get
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+
+users = []
+
+notes = []
+
+
 
 @login_manager.user_loader
 def load_user(email):
@@ -112,17 +80,26 @@ def logout():
     logout_user()
     return "Logged out"
 
+@app.route("/profile")
+@login_required
+def get_current_user():
+    for user in users:
+        if user['id'] == current_user.id:
+            return json2html.convert(json = {'my profile': user})
+    return 'Profile not found'
+
 @app.route("/notes", methods = ['GET','POST','DELETE'])
+@login_required
 def routes():
     form = NoteForm(request.form)
-    id = 1
+    id = current_user.id
     if request.method == 'GET':
-
         user_notes=[]
         for note in notes:
             if note['userid'] == id:
                 user_notes.append(note)
         return render_template('notes.html', context=user_notes, form = form)
+
     elif request.method == 'POST':
         private = form.private.data
         title = form.title.data
@@ -176,7 +153,7 @@ def viewnotes(userid=None):
                 user_notes.append(note)
         return redirect(url_for('viewnotes/1'))
 
-@app.route('/<string:username>/follow', methods = ['GET','PUT'])
+@app.route('/<string:username>/follow', methods = ['GET'])
 @login_required
 def follow(username):
     the_user = {}
@@ -196,20 +173,42 @@ def follow(username):
             return jsonify({'Already following!': to_follow})
     return jsonify({'Error': 'There is no user with that username',
         'users': users,
-        'current_user': the_user})
-    return 400
+        'current_user': the_user}), 400
 
 @app.route('/dashboard', methods = ['GET'])
 @login_required
 def get_notes():
-    the_user = [user for user in users if user['id'] == current_user.id]
+    for user in users:
+        if user['id'] == current_user.id:
+            the_user = user
+    # the_user = [user for user in users if user['id'] == current_user.id]
     followed_notes = []
     for note in notes:
-        if note['userid'] in the_user['following'] and note['private'] == False:
+        if note['userid'] in the_user['following'] and note['private'] == 'False':
             followed_notes.append(note)
-    return jsonify({'followed': followed_notes, 'current profile': the_user}), 201
+    return json2htm.convert(json = {'followed notes': followed_notes, 'current profile': the_user}), 201
 
-#purely for authentication
+@app.route('/notes/<int:noteid>/share/<int:userid>', methods = ['GET'])
+@login_required
+def share_with(noteid, userid):
+    the_user = [user for user in users if user['id'] == current_user.id]
+    for user in users:
+        if user['id'] == userid:
+            person = user
+            person_index = users.index(person)
+    note = [note for note in notes if note['noteid'] == noteid]
+    if person and note:
+        message = {
+            'userid': current_user.id,
+            'noteid': noteid
+        }
+        users[person_index]['messages'].append(message)
+        return 'message sent!', 201
+    else:
+        return 'User or note not found', 400
+
+
+# purely for authentication
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -240,4 +239,4 @@ class User(db.Model):
 
 if __name__ == '__main__':
     db.create_all()
-    app.run(port=5000, host='localhost', debug=True)
+    app.run(port=5000, host='localhost', debug=True, threaded=True)
