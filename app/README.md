@@ -8,7 +8,11 @@
  - Have a private and public repository for notes
 
 ### How to run
-On your terminal, go to folder where the file is located. Type the command "python app.py", open up your browser and access the link: http://localhost:5000/
+On your terminal, cd into the main app folder.  
+
+Run `pip install -r requirements.txt`
+
+Type the command "python app.py", open up your browser and access the link: http://localhost:5000/
 
 Run the following links to access the different routes available
 
