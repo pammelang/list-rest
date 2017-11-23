@@ -19,7 +19,6 @@ login_manager.init_app(app)
 
 
 users = []
-
 notes = []
 
 
@@ -51,7 +50,7 @@ def signup():
                 'password': form.password.data, 'email': form.email.data,
                 'following': [], 'messages': []}
                 users.append(new_user)
-                return jsonify({'user created': users})
+                return json2html.convert(json = {'user created': users})
         else:
             return "Form didn't validate"
 
@@ -112,7 +111,6 @@ def routes():
             if note['userid'] == id:
                 user_notes.append(note)
         return render_template('notes.html', context=user_notes, form = form)
-
     elif request.method == 'DELETE':
         noteid = form.noteid.data
         user_notes=[]
@@ -126,30 +124,35 @@ def routes():
             if note['userid'] == id:
                 user_notes.append(note)
         #return render_template('notes.html', context=user_notes, form=form)
-    else:
-        return "fail"
+
+    elif request.method == 'PUSH':
+        print("test")
 
 @app.route("/viewnotes", methods = ['GET','POST'])
 @app.route("/viewnotes/<int:userid>", methods = ['GET', 'POST'])
 def viewnotes(userid=None):
     form = CommentForm()
     if request.method == 'GET':
-        for user in users:
-            if user['id'] == userid:
-                person = user
         user_notes = []
-        for note in notes:
-            if note['userid'] == userid and note['private'] == 'False':
-                user_notes.append(note)
+        if userid != None:
+            for note in notes:
+                if note['userid'] == userid and note['private'] == 'False':
+                    user_notes.append(note)
+        else:
+            for note in notes:
+                if note['private'] == 'False':
+                    user_notes.append(note)
         return render_template('viewnotes.html', form=form, context=user_notes)
     elif request.method == 'POST':
         noteid = form.noteid.data
         comment = form.comment.data
+        #temp = {'userid': current_user.id, 'text': comment}
+        temp = [{'userid': 1, 'text':comment}]
         user_notes=[]
         for note in notes:
             if note['noteid']==noteid:
-                note['comments'].append(comment)
-            if note['userid'] == userid and note['private'] == 'False':
+                note['comments'].append(temp)
+            if note['private'] == 'False':
                 user_notes.append(note)
         return redirect(url_for('viewnotes/1'))
 
@@ -168,10 +171,10 @@ def follow(username):
         if to_follow['id'] not in the_user['following']:
             the_user['following'].append(to_follow['id'])
             users[user_index] = the_user
-            return jsonify({'Now following': users[user_index]})
+            return json2html.convert(json = {'Now following': users[user_index]})
         else:
-            return jsonify({'Already following!': to_follow})
-    return jsonify({'Error': 'There is no user with that username',
+            return json2html.convert(json={'Already following!': to_follow})
+    return json2html.convert(json={'Error': 'There is no user with that username',
         'users': users,
         'current_user': the_user}), 400
 
@@ -207,6 +210,7 @@ def share_with(noteid, userid):
     else:
         return 'User or note not found', 400
 
+    return json2html.convert(json={'followed': followed_notes, 'current profile': the_user}), 201
 
 # purely for authentication
 class User(db.Model):
@@ -234,8 +238,6 @@ class User(db.Model):
 
     def get_id(self):
         return self.email
-
-
 
 if __name__ == '__main__':
     db.create_all()

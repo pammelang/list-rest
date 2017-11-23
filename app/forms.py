@@ -12,10 +12,19 @@ class NoteForm(Form):
 	note = StringField('Note: ')
 	title = StringField('Title: ')
 	private = StringField('Private: ')
-	noteid = IntegerField('Noteid: ')
+	note1 = StringField('Note: ')
+	title1 = StringField('Title: ')
+	private1 = StringField('Private: ')
+	noteid1 = IntegerField('Note id: ')
+	noteid = IntegerField('Note id: ')
 	submit = SubmitField("Add note!")
 
 class CommentForm(Form):
 	comment = StringField('Comment')
+<<<<<<< HEAD
+	noteid = IntegerField('Note id')
+	submit = SubmitField("Add comment!")
+=======
 	noteid = IntegerField('Noteid')
 	submit = SubmitField("Add comment!")
+>>>>>>> 30bcf5974c01df917c578be535c2647f53eb522e
