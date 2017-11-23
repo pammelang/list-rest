@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>View your notes!</title>
+</head>
+<body>
+    <h1>Your notes</h1>
+    <p> {{ context }} </p>
+    <form method="POST" action="/signup">
+        
+        {{ form.note.label }} {{ form.note(size=50) }}
+        <input type="submit" value="Add a new note!">
+    </form>
+</body>
+</html>

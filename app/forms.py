@@ -8,3 +8,11 @@ class SignupForm(Form):
     username = StringField(u'username', validators=[DataRequired()])
     
     submit = SubmitField("Sign In")
+
+class NoteForm(Form):
+	note = StringField('Note:', validators = [DataRequired()])
+	submit = SubmitField("Add note!")
+
+class CommentForm(Form):
+	comment = StringField('comment', validators = [DataRequired()])
+	submit = SubmitField("Add comment!")

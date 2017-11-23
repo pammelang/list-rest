@@ -40,7 +40,7 @@
         "title": "this is a todo list",
         "text": "need to do ml & networks & db",
         "private": "False",
-        "comments": [{"userid": 2, "text": "wow that\"s alot"}, {"userid": 3, "text": "how to do ml?"}]
+        "comments": [{"userid": 2, "text": "wow thats alot"}, {"userid": 3, "text": "how to do ml?"}]
     },
     {
         "noteid": 2,
