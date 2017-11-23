@@ -7,6 +7,7 @@ import os.path
 
 
 
+
 app = Flask(__name__)
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 #if using apple:
@@ -17,7 +18,68 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(tempfile.get
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
-data = json.load(open('data.json'))
+
+users = [
+    {
+        "id": 1,
+        "username": "pamm",
+        "password": "12345",
+        "email": "pamm@gmail.com",
+        "following": [2, 3],
+        "messages": []
+    },
+    {
+        "id": 2,
+        "username": "val",
+        "password": "12345",
+        "email": "val@gmail.com",
+        "following": [1, 3],
+        "messages": []
+    },
+    {
+        "id": 3,
+        "username": "tom",
+        "password": "12345",
+        "email": "tom@gmail.com",
+        "following": [1, 2],
+        "messages": []
+    },
+    {
+        "id": 4,
+        "username": "dan",
+        "password": "12345",
+        "email": "dan@gmail.com",
+        "following": [2],
+        "messages": []
+    }
+]
+notes = [
+    {
+        "noteid": 1,
+        "userid": 1,
+        "title": "this is a todo list",
+        "text": "need to do ml & networks & db",
+        "private": "False",
+        "comments": [{"userid": 2, "text": "wow thats alot"}, {"userid": 3, "text": "how to do ml?"}]
+    },
+    {
+        "noteid": 2,
+        "userid": 1,
+        "title": "grocery list",
+        "text": "buy detergent and broccoli",
+        "private": "False",
+        "comments": [{"userid": 2, "text": "can you help me buy milk"}]
+    },
+    {
+        "noteid": 3,
+        "userid": 3,
+        "title": "reminder",
+        "text": "meet val at 3pm tomorrow",
+        "private": "True",
+        "comments": []
+    }
+]
+
 
 @login_manager.user_loader
 def load_user(email):
@@ -44,7 +106,7 @@ def signup():
                 login_user(newuser)
                 return "User created!!!"
         else:
-            return "Form didn't validateeee"
+            return "Form didn't validate"
 
 @app.route('/login', methods=['GET','POST'])
 def login():
@@ -71,33 +133,69 @@ def logout():
     logout_user()
     return "Logged out"
 
-@app.route("/notes", methods = ['GET','POST'])
-def notes():
-    form = NoteForm()
-    #id = User.get_id()
+@app.route("/notes", methods = ['GET','POST','DELETE'])
+def routes():
+    form = NoteForm(request.form)
     id = 1
-    print("iam here")
     if request.method == 'GET':
-        context=data['users'][id-1]
-        return render_template('notes.html', context=context, form = form)
+
+        user_notes=[]
+        for note in notes:
+            if note['userid'] == id:
+                user_notes.append(note)
+        return render_template('notes.html', context=user_notes, form = form)
     elif request.method == 'POST':
-        print("here")
-        if form.validate_on_submit():
-            data['users'][id-1]['messages'].append("hello")
-            print(data['users'][id-1])
-            return render_template('notes.html', form = form)
+        private = form.private.data
+        title = form.title.data
+        text = form.note.data
+        noteid = len(notes)
+        temp = {'noteid':noteid, 'userid':id,'title':title,'text':text,'private':private,'comments':[]}
+        notes.append(temp)
+        user_notes=[]
+        for note in notes:
+            if note['userid'] == id:
+                user_notes.append(note)
+        return render_template('notes.html', context=user_notes, form = form)
 
+    elif request.method == 'DELETE':
+        noteid = form.noteid.data
+        user_notes=[]
+        print("hre")
+        for note in notes:
+            print("in here")
+            if note['noteid'] == noteid:
+                print('hi')
+                del note
+                print(notes)
+            if note['userid'] == id:
+                user_notes.append(note)
+        #return render_template('notes.html', context=user_notes, form=form)
+    else:
+        return "fail"
 
-@app.route("/viewnotes/<int:userid>", methods = ['GET'])
-def viewnotes(userid):
-    for user in data['users']:
-        if user['id'] == userid:
-            person = user
-    user_notes = []
-    for note in data['notes']:
-        if note['userid'] == userid and note['private'] == 'False':
-            user_notes.append(note)
-    return jsonify({person['username'] + '\'s notes': user_notes})
+@app.route("/viewnotes", methods = ['GET','POST'])
+@app.route("/viewnotes/<int:userid>", methods = ['GET', 'POST'])
+def viewnotes(userid=None):
+    form = CommentForm()
+    if request.method == 'GET':
+        for user in users:
+            if user['id'] == userid:
+                person = user
+        user_notes = []
+        for note in notes:
+            if note['userid'] == userid and note['private'] == 'False':
+                user_notes.append(note)
+        return render_template('viewnotes.html', form=form, context=user_notes)
+    elif request.method == 'POST':
+        noteid = form.noteid.data
+        comment = form.comment.data
+        user_notes=[]
+        for note in notes:
+            if note['noteid']==noteid:
+                note['comments'].append(comment)
+            if note['userid'] == userid and note['private'] == 'False':
+                user_notes.append(note)
+        return redirect(url_for('viewnotes/1'))
 
 
 #purely for authentication
@@ -130,3 +228,5 @@ class User(db.Model):
 if __name__ == '__main__':
     db.create_all()
     app.run(port=5000, host='localhost', debug=True)
+
+

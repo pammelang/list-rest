@@ -7,10 +7,25 @@
 <body>
     <h1>Your notes</h1>
     <p> {{ context }} </p>
-    <form method="POST" action="/signup">
-        
+    <h2> Add a new note! </h2>
+    <form method="POST" action="/notes">
+        {{ form.title.label }} {{ form.title(size=20)}}
+        <br/>
+        <br/>
         {{ form.note.label }} {{ form.note(size=50) }}
+        <br/>
+        <br/>
+        {{ form.private.label }} {{ form.private(size=10)}}
+        <br/>
+        <br/>
         <input type="submit" value="Add a new note!">
+    </form>
+    <h2> Delete a note! </h2>
+    <form method = "DELETE" action="/notes">
+    	{{ form.noteid.label }} {{form.noteid(size=5)}}
+    	<br/>
+    	<br/>
+    	<input type ="submit" value = "Delete this note!">
     </form>
 </body>
 </html>

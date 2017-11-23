@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>View your friend's notes!</title>
+</head>
+<body>
+    <h1>Your friend's notes!</h1>
+    <p> {{ context }} </p>
+    <form method="POST" action="/viewnotes">
+        {{ form.noteid.label }} {{ form.noteid(size=5)}}
+        <br/>
+        <br/>
+        {{ form.comment.label }} {{ form.comment(size=50) }}
+
+        <br/>
+        <br/>
+        <input type="submit" value="Add a comment to a note!">
+    </form>
+</body>
+</html>
