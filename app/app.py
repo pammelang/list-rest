@@ -8,7 +8,7 @@ import os.path
 
 app = Flask(__name__)
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
-#if using apple:
+#if using mac os:
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
 
 #if using windows:
@@ -17,10 +17,8 @@ db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-
 users = []
 notes = []
-
 
 
 @login_manager.user_loader
@@ -87,46 +85,50 @@ def get_current_user():
             return json2html.convert(json = {'my profile': user})
     return 'Profile not found'
 
-@app.route("/notes", methods = ['GET','POST','DELETE'])
+
+@app.route("/notes", methods = ['GET','POST'])
 @login_required
 def routes():
-    form = NoteForm(request.form)
+    form = NoteForm()
     id = current_user.id
+    user_notes=[]
     if request.method == 'GET':
-        user_notes=[]
         for note in notes:
             if note['userid'] == id:
                 user_notes.append(note)
         return render_template('notes.html', context=user_notes, form = form)
 
     elif request.method == 'POST':
-        private = form.private.data
-        title = form.title.data
-        text = form.note.data
-        noteid = len(notes)
-        temp = {'noteid':noteid, 'userid':id,'title':title,'text':text,'private':private,'comments':[]}
-        notes.append(temp)
-        user_notes=[]
-        for note in notes:
-            if note['userid'] == id:
-                user_notes.append(note)
-        return render_template('notes.html', context=user_notes, form = form)
-    elif request.method == 'DELETE':
-        noteid = form.noteid.data
-        user_notes=[]
-        print("hre")
-        for note in notes:
-            print("in here")
-            if note['noteid'] == noteid:
-                print('hi')
-                del note
-                print(notes)
-            if note['userid'] == id:
-                user_notes.append(note)
-        #return render_template('notes.html', context=user_notes, form=form)
-
-    elif request.method == 'PUSH':
-        print("test")
+        if form.private.data != "" and form.title.data != "" and form.text.data != "":
+            private = form.private.data
+            title = form.title.data
+            text = form.note.data
+            noteid = len(notes)
+            temp = {'noteid':noteid, 'userid':id,'title':title,'text':text,'private':private,'comments':[]}
+            notes.append(temp)
+            user_notes=[]
+            for note in notes:
+                if note['userid'] == id:
+                    user_notes.append(note)
+            return redirect(url_for('routes'))
+        elif form.noteid1.data != "" and form.title1.data != "" and form.note1.data !="" and form.private1.data !="":
+            for note in notes:
+                if note['noteid'] == form.noteid1.data:
+                    note['title'] = form.title1.data
+                    note['text'] = form.note1.data
+                    note['private'] = form.private1.data
+            return redirect(url_for('routes'))
+        elif form.noteid.data != "":
+            ctr = 0
+            val = 1
+            for note in notes:
+                for noteid, value in note.items():
+                    if value == form.noteid.data:
+                        val = ctr
+                        break
+                ctr+=1
+            del notes[val]
+            return redirect(url_for('routes'))
 
 @app.route("/viewnotes", methods = ['GET','POST'])
 @app.route("/viewnotes/<int:userid>", methods = ['GET', 'POST'])
@@ -146,15 +148,15 @@ def viewnotes(userid=None):
     elif request.method == 'POST':
         noteid = form.noteid.data
         comment = form.comment.data
-        #temp = {'userid': current_user.id, 'text': comment}
-        temp = [{'userid': 1, 'text':comment}]
+        temp = [{'userid': current_user.id, 'text': comment}]
         user_notes=[]
         for note in notes:
             if note['noteid']==noteid:
                 note['comments'].append(temp)
             if note['private'] == 'False':
                 user_notes.append(note)
-        return redirect(url_for('viewnotes/1'))
+        return redirect(url_for('viewnotes'))
+    return render_template('viewnotes.html', form=form, context = "")
 
 @app.route('/<string:username>/follow', methods = ['GET'])
 @login_required

@@ -21,10 +21,8 @@ class NoteForm(Form):
 
 class CommentForm(Form):
 	comment = StringField('Comment')
-<<<<<<< HEAD
 	noteid = IntegerField('Note id')
 	submit = SubmitField("Add comment!")
-=======
 	noteid = IntegerField('Noteid')
 	submit = SubmitField("Add comment!")
->>>>>>> 30bcf5974c01df917c578be535c2647f53eb522e
+
