@@ -1,7 +1,9 @@
 from functools import wraps
 from flask import Flask, Response, request, json, jsonify, abort, make_response, redirect, url_for
+from flask_httpauth import HTTPBasicAuth
 import time
 app = Flask(__name__)
+auth = HTTPBasicAuth()
 app.debug = True
 
 # login_manager = LoginManager()
@@ -73,13 +75,16 @@ notes = [
     }
 ]
 
-def auth(username, password):
+@auth.get_password
+def get_pw(username):
     for user in users:
-        if (username == user['username']):
-            global own_id, current_user
-            own_id = user['id']
-            current_user = user
-            return username == user['username'] and password == user['password']
+        if user['username'] == username:
+        return user['password']
+    return None
+
+@auth.error_handler
+def auth_error():
+    return "&lt;h1&gt;Access Denied&lt;/h1&gt;"
 
 #produces the authentication required pop up box
 def authenticate():
@@ -90,22 +95,22 @@ def authenticate():
     return resp
 
 #checks that login info is correct
-def requireAuth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        autho = request.authorization
-        if 'current_user' not in globals() or current_user == None:
-            if not autho:
-                return authenticate()
-            elif not auth(autho.username, autho.password):
-                return authenticate()
-            else:
-                return f(*args, **kwargs)
-        elif not auth(current_user['username'], current_user['password']):
-            return authenticate()
-        else:
-            return f(*args, **kwargs)
-    return decorated
+# def requireAuth(f):
+#     @wraps(f)
+#     def decorated(*args, **kwargs):
+#         autho = request.authorization
+#         if 'current_user' not in globals() or current_user == None:
+#             if not autho:
+#                 return authenticate()
+#             elif not auth(autho.username, autho.password):
+#                 return authenticate()
+#             else:
+#                 return f(*args, **kwargs)
+#         elif not auth(current_user['username'], current_user['password']):
+#             return authenticate()
+#         else:
+#             return f(*args, **kwargs)
+#     return decorated
 
 @app.route('/')
 def api_root():
@@ -115,23 +120,25 @@ def api_root():
 #sample curl method: curl -u username http://127.0.0.1:5000/login (input password as requested)
 #sample curl method: curl -u username:password http://127.0.0.1:5000/login
 @app.route('/login')
-@requireAuth
+@auth.login_required
 def login():
     return('Welcome ')
 
 #logout page
 #sample curl method: curl http://127.0.0.1:5000/logout
 @app.route('/logout')
+@auth.login_required
 def logout():
     #global own_id, current_user
     global own_id, current_user
     own_id = 0
     current_user = None
     return redirect(url_for('api_root'))
-    
+
 # get/post own notes
 #sample curl method: curl http://127.0.0.1:5000/notes
 @app.route('/notes', methods = ['GET', 'POST'])
+@auth.login_required
 def routes():
     print(notes)
     if request.method == 'POST':
@@ -168,8 +175,9 @@ def routes():
 
 # view, delete, update own note
 #sample curl delete method: curl http://127.0.0.1:5000/notes/noteid -X DELETE
-#sample curl put method: curl http://127.0.0.1:5000/notes/noteid -X PUT -d 
+#sample curl put method: curl http://127.0.0.1:5000/notes/noteid -X PUT -d
 @app.route('/notes/<int:noteid>', methods = ['GET', 'DELETE', 'PUT'])
+@auth.login_required
 def get_note(noteid):
     note = [note for note in notes if note['noteid'] == noteid]
     if request.method == 'DELETE':
@@ -204,6 +212,7 @@ def get_other_notes(userid):
 # post a comment on others' notes
 # sample curl method: curl http://127.0.0.1:5000/userid/notes/noteid/comments -X PUT -d '{"text":"input_text_here"}'
 @app.route('/<int:userid>/notes/<int:noteid>/comments', methods = ['POST','GET'])
+@auth.login_required
 def comment(userid, noteid):
     for note in notes:
         if note['noteid'] == noteid:
@@ -227,6 +236,7 @@ def comment(userid, noteid):
 # follow others
 # sample curl method: curl http://127.0.0.1:5000/userid/follow -X PUT
 @app.route('/<int:userid>/follow', methods = ['PUT', 'GET'])
+@auth.login_required
 def follow(userid):
     to_follow = [user for user in users if user['id'] == userid]
     if to_follow:
@@ -242,6 +252,7 @@ def follow(userid):
 # view following
 # sample curl method: curl http://127.0.0.1:5000/dashboard
 @app.route('/dashboard', methods = ['GET'])
+@auth.login_required
 def get_notes():
     followed_notes = []
     for note in notes:
@@ -252,6 +263,7 @@ def get_notes():
 # share notes - send messages
 # sample curl method: curl http://127.0.0.1:5000/notes/noteid/share/userid -X PUT
 @app.route('/notes/<int:noteid>/share/<int:userid>', methods = ['PUT','GET'])
+@auth.login_required
 def share_with(noteid, userid):
     for user in users:
         if user['id'] == userid:
@@ -270,6 +282,7 @@ def share_with(noteid, userid):
 # view messages
 #sample curl method: curl http://127.0.0.1:5000/messages
 @app.route('/messages', methods = ['GET'])
+@auth.login_required
 def get_messages():
     return jsonify({'messages': current_user['messages']}), 201
 

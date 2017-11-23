@@ -1,0 +1,62 @@
+{ "users": [
+    {
+        "id": 1,
+        "username": "pamm",
+        "password": "12345",
+        "email": "pamm@gmail.com",
+        "following": [2, 3],
+        "messages": []
+    },
+    {
+        "id": 2,
+        "username": "val",
+        "password": "12345",
+        "email": "val@gmail.com",
+        "following": [1, 3],
+        "messages": []
+    },
+    {
+        "id": 3,
+        "username": "tom",
+        "password": "12345",
+        "email": "tom@gmail.com",
+        "following": [1, 2],
+        "messages": []
+    },
+    {
+        "id": 4,
+        "username": "dan",
+        "password": "12345",
+        "email": "dan@gmail.com",
+        "following": [2],
+        "messages": []
+    }
+],
+
+"notes": [
+    {
+        "noteid": 1,
+        "userid": 1,
+        "title": "this is a todo list",
+        "text": "need to do ml & networks & db",
+        "private": "False",
+        "comments": [{"userid": 2, "text": "wow that\"s alot"}, {"userid": 3, "text": "how to do ml?"}]
+    },
+    {
+        "noteid": 2,
+        "userid": 1,
+        "title": "grocery list",
+        "text": "buy detergent and broccoli",
+        "private": "False",
+        "comments": [{"userid": 2, "text": "can you help me buy milk"}]
+    },
+    {
+        "noteid": 3,
+        "userid": 3,
+        "title": "reminder",
+        "text": "meet val at 3pm tomorrow",
+        "private": "True",
+        "comments": []
+    }
+]
+}

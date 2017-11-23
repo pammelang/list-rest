@@ -12,7 +12,7 @@ There can be multiple clients accessing the server simultaneously.
  - Have a private and public repository for notes
 
 ### How to run
-On your terminal, go to folder where the file is located. Type the command "python rest.py", open up your browser and access the link: http://127.0.0.1:5000/ 
+On your terminal, go to folder where the file is located. Type the command "python rest.py", open up your browser and access the link: http://127.0.0.1:5000/
 Run the following links to access the different routes available
 
 home page: http://127.0.0.1:5000/
@@ -24,5 +24,5 @@ follow other people: http://127.0.0.1:5000/<userid>/follow
 view those you're following: http://127.0.0.1:5000/dashboard
 share notes and send messages: http://127.0.0.1:5000/notes/<noteid>/share/<userid>
 view your messages: http://127.0.0.1:5000/messages
- 
+
 The sample curl messages are as stated in the code. Open a second terminal instance and type the curl commands, remember to call the curl method for the login page first before accessing other curl methods.
