@@ -9,10 +9,8 @@
     <form method="POST" action="/signup">
         {{ form.hidden_tag() }}
         {{ form.email.label }} {{ form.email(size=20) }}
- 
         {{ form.password.label }} {{ form.password(size=20) }}
-        <br/>
-        <br/>
+        {{ form.username.label }} {{ form.username(size=20) }}
         <input type="submit" value="Signup">
     </form>
 </body>

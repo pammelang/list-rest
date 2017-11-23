@@ -3,10 +3,9 @@ from wtforms import StringField, PasswordField, SubmitField, IntegerField,valida
 from wtforms.validators import Email, DataRequired
 
 class SignupForm(Form):
-    email = StringField('Email',validators=[DataRequired(),Email()])
-    password = PasswordField('Password', validators=[DataRequired()])
-    username = StringField(u'Username', validators=[DataRequired()])
-    
+    email = StringField('email',validators=[DataRequired(),Email()])
+    password = PasswordField('password', validators=[DataRequired()])
+    username = StringField(u'username')
     submit = SubmitField("Sign In")
 
 class NoteForm(Form):
