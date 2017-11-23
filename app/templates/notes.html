@@ -20,6 +20,22 @@
         <br/>
         <input type="submit" value="Add a new note!">
     </form>
+    <h2> Edit a note! </h2>
+    <form method = "PUSH" action ="/notes">
+    	{{ form.noteid1.label }} {{ form.noteid1(size=5)}}
+    	<br/>
+    	<br/>
+    	{{ form.title1.label }} {{ form.title1(size=20)}}
+        <br/>
+        <br/>
+        {{ form.note1.label }} {{ form.note1(size=50) }}
+        <br/>
+        <br/>
+        {{ form.private1.label }} {{ form.private1(size=10)}}
+        <br/>
+        <br/>
+        <input type="submit" value="Edit your note!">
+    </form>
     <h2> Delete a note! </h2>
     <form method = "DELETE" action="/notes">
     	{{ form.noteid.label }} {{form.noteid(size=5)}}

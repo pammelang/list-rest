@@ -5,15 +5,12 @@ from flask_sqlalchemy import SQLAlchemy
 import tempfile
 import os.path
 
-
-
-
 app = Flask(__name__)
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 #if using apple:
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
 
-#if using windows:
+#if using windows:  
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(tempfile.gettempdir(), 'test.db')
 db = SQLAlchemy(app)
 login_manager = LoginManager()
@@ -67,7 +64,7 @@ notes = [
         "userid": 1,
         "title": "grocery list",
         "text": "buy detergent and broccoli",
-        "private": "False",
+        "private": "True",
         "comments": [{"userid": 2, "text": "can you help me buy milk"}]
     },
     {
@@ -75,7 +72,7 @@ notes = [
         "userid": 3,
         "title": "reminder",
         "text": "meet val at 3pm tomorrow",
-        "private": "True",
+        "private": "False",
         "comments": []
     }
 ]
@@ -137,8 +134,8 @@ def logout():
 def routes():
     form = NoteForm(request.form)
     id = 1
+    #id = current_user.id
     if request.method == 'GET':
-
         user_notes=[]
         for note in notes:
             if note['userid'] == id:
@@ -156,7 +153,6 @@ def routes():
             if note['userid'] == id:
                 user_notes.append(note)
         return render_template('notes.html', context=user_notes, form = form)
-
     elif request.method == 'DELETE':
         noteid = form.noteid.data
         user_notes=[]
@@ -170,33 +166,39 @@ def routes():
             if note['userid'] == id:
                 user_notes.append(note)
         #return render_template('notes.html', context=user_notes, form=form)
-    else:
-        return "fail"
+
+    elif request.method == 'PUSH':
+        print("test")
 
 @app.route("/viewnotes", methods = ['GET','POST'])
 @app.route("/viewnotes/<int:userid>", methods = ['GET', 'POST'])
 def viewnotes(userid=None):
     form = CommentForm()
     if request.method == 'GET':
-        for user in users:
-            if user['id'] == userid:
-                person = user
         user_notes = []
-        for note in notes:
-            if note['userid'] == userid and note['private'] == 'False':
-                user_notes.append(note)
+        if userid != None:
+            for note in notes:
+                if note['userid'] == userid and note['private'] == 'False':
+                    user_notes.append(note)
+        else:
+            for note in notes:
+                if note['private'] == 'False':
+                    user_notes.append(note)
         return render_template('viewnotes.html', form=form, context=user_notes)
     elif request.method == 'POST':
         noteid = form.noteid.data
         comment = form.comment.data
+        #temp = {'userid': current_user.id, 'text': comment}
+        temp = [{'userid': 1, 'text':comment}]
         user_notes=[]
         for note in notes:
             if note['noteid']==noteid:
-                note['comments'].append(comment)
-            if note['userid'] == userid and note['private'] == 'False':
+                note['comments'].append(temp)
+            if note['private'] == 'False':
                 user_notes.append(note)
-        return redirect(url_for('viewnotes/1'))
-
+        return render_template('viewnotes.html', form=form, context=user_notes)
+    else:
+        return render_template('viewnotes.html', form=form, context = "")
 
 #purely for authentication
 class User(db.Model):
@@ -222,8 +224,6 @@ class User(db.Model):
 
     def get_id(self):
         return id
-
-
 
 if __name__ == '__main__':
     db.create_all()

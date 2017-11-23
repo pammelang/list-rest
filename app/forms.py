@@ -13,10 +13,14 @@ class NoteForm(Form):
 	note = StringField('Note: ')
 	title = StringField('Title: ')
 	private = StringField('Private: ')
-	noteid = IntegerField('Noteid: ')
+	note1 = StringField('Note: ')
+	title1 = StringField('Title: ')
+	private1 = StringField('Private: ')
+	noteid1 = IntegerField('Note id: ')
+	noteid = IntegerField('Note id: ')
 	submit = SubmitField("Add note!")
 
 class CommentForm(Form):
 	comment = StringField('Comment')
-	noteid = IntegerField('Noteid')
+	noteid = IntegerField('Note id')
 	submit = SubmitField("Add comment!")
