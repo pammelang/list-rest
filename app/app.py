@@ -99,7 +99,7 @@ def routes():
         return render_template('notes.html', context=user_notes, form = form)
 
     elif request.method == 'POST':
-        if form.private.data != "" and form.title.data != "" and form.text.data != "":
+        if form.private.data != "" and form.title.data != "" and form.note.data != "":
             private = form.private.data
             title = form.title.data
             text = form.note.data
@@ -191,7 +191,7 @@ def get_notes():
     for note in notes:
         if note['userid'] in the_user['following'] and note['private'] == 'False':
             followed_notes.append(note)
-    return json2htm.convert(json = {'followed notes': followed_notes, 'current profile': the_user}), 201
+    return json2html.convert(json = {'followed notes': followed_notes, 'current profile': the_user}), 201
 
 @app.route('/notes/<int:noteid>/share/<int:userid>', methods = ['GET'])
 @login_required
