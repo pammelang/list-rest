@@ -8,11 +8,12 @@ import os.path
 
 app = Flask(__name__)
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
-#if using mac os:
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
 
-#if using windows:
+# if using mac os:
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
+# if using windows:
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(tempfile.gettempdir(), 'test.db')
+
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -242,5 +243,7 @@ class User(db.Model):
         return self.email
 
 if __name__ == '__main__':
+    db.reflect()
+    db.drop_all()
     db.create_all()
     app.run(port=5000, host='localhost', debug=True, threaded=True)
